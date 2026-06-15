@@ -24,7 +24,7 @@ DB_PATH = os.path.expandvars(
 )
 ```
 
-其中 `oAN1i2QeAp3l7N3rTulEfIYe4DDY` 是示例用户 ID（已在上传版本中替换为 `YOUR_USER_ID_HERE`），实际为一串随机密文。用户 ID 位于 `%APPDATA%\Tencent\Marvis\User\` 下的文件夹名，每个用户不同，需替换为自己的。
+其中`YOUR_USER_ID_HERE` 是要替换为你的用户 ID，实际为一串随机密文（比如`oAN1i2QeAp3l7N3rTulEfIYe4DDY`）。用户 ID 位于 `%APPDATA%\Tencent\Marvis\User\` 下的文件夹名，每个用户不同，需替换为自己的。
 
 ### 2. 配置 Python 路径（Windows）
 
