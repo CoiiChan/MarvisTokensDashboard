@@ -1,14 +1,22 @@
 # MarvisTokensDashboard
 
-Real-time dashboard monitoring Marvis AI model token usage and costs, served as a single-file Python HTTP server.
+Marvis AI 模型 Token 用量实时监控面板，单文件 Python HTTP 服务器，零外部依赖。
 
-![Dashboard Screenshot](screenshot.png)
+## 面板截图
 
-## Quick Start
+**横屏（PC 端）**
 
-### 1. Configure Your User ID
+![横屏截图](MavisLandscapeScreen.png)
 
-Edit `model_monitor.py` line 10, replace `YOUR_USER_ID_HERE` with your Marvis user ID:
+**竖屏（手机端）**
+
+![竖屏截图](MavisVerticalScreen.png)
+
+## 快速开始
+
+### 1. 配置用户 ID
+
+编辑 `model_monitor.py` 第 10 行，将 `YOUR_USER_ID_HERE` 替换为你的 Marvis 用户 ID：
 
 ```python
 DB_PATH = os.path.expandvars(
@@ -16,93 +24,93 @@ DB_PATH = os.path.expandvars(
 )
 ```
 
-Your user ID can be found under `%APPDATA%\Tencent\Marvis\User\` — it's a folder named with a random alphanumeric string (e.g., `oAN1i2QeAp3l7N3rTulEfIYe4DDY`). The uploaded version uses `YOUR_USER_ID_HERE` as placeholder; each user must replace it with their own.
+其中 `oAN1i2QeAp3l7N3rTulEfIYe4DDY` 是示例用户 ID（已在上传版本中替换为 `YOUR_USER_ID_HERE`），实际为一串随机密文。用户 ID 位于 `%APPDATA%\Tencent\Marvis\User\` 下的文件夹名，每个用户不同，需替换为自己的。
 
-### 2. Configure Python Path (Windows)
+### 2. 配置 Python 路径（Windows）
 
-Edit `启动模型监控.bat` and update `PYTHON_PATH` to match your MarvisAgent installation:
+编辑 `启动模型监控.bat`，将 `PYTHON_PATH` 改为你的 MarvisAgent 安装路径：
 
 ```bat
 set PYTHON_PATH=C:\Program Files\Tencent\Marvis\MarvisAgent\VERSION_HERE\runtime\python311\python.exe
 ```
 
-Replace `VERSION_HERE` with your actual MarvisAgent version (e.g., `1.0.1100.210`). The Python runtime is bundled with MarvisAgent — look under `runtime\python311\python.exe` in the versioned install directory.
+将 `VERSION_HERE` 替换为实际的版本号（如 `1.0.1100.210`）。Python 运行时随 MarvisAgent 打包安装，位于版本化安装目录下的 `runtime\python311\python.exe`。如果 MarvisAgent 安装在非默认路径，请改为实际路径。
 
-### 3. Launch
+### 3. 启动
 
-Double-click `启动模型监控.bat`, or run:
+双击 `启动模型监控.bat`，或在终端执行：
 
 ```bash
 python model_monitor.py
 ```
 
-Open `http://127.0.0.1:19999` in your browser.
+浏览器访问 `http://127.0.0.1:19999`。
 
 ---
 
-## Dashboard Components
+## 面板组件
 
-| Panel | Description |
-|-------|-------------|
-| **Status Badge** | Green "Idle" / Red "Busy" — polls `conversations` table every 5s; switches to busy when any conversation is `in_progress` within the last 2 minutes |
-| **Digital Clock** | Real-time display; dims to 45% brightness at night (auto 18:00-09:30 or manual via ☾ button) |
-| **Today Consumption** | Net token usage: Input (cache miss) + Cache hit + Output + estimated cost in CNY (DeepSeek pricing: ¥1/M input, ¥0.1/M cached, ¥2/M output) |
-| **Champion Model** | Top model by token consumption today, shown as "Model Name + Token Count" in Chinese 万 (10K) units |
-| **Model Table** | Ranked list showing: model name, call count, net tokens, share %, peak/avg per request, last used time. Auto-routing aliases (ending `-auto`) are marked separately |
+| 组件 | 说明 |
+|------|------|
+| **状态徽章** | 绿色「摸鱼中」/ 红色「忙碌中」—— 每 5 秒轮询 `conversations` 表，近 2 分钟内有 `in_progress` 会话则显示忙碌 |
+| **数字时钟** | 实时显示；夜间自动降至 45% 亮度（18:00~09:30 自动触发，也可手动点击 ☾ 按钮） |
+| **今日消耗** | 净 Token 用量：输入未命中 + 缓存命中 + 输出 + 预估费用（按 DeepSeek 定价：输入 ¥1/百万、缓存 ¥0.1/百万、输出 ¥2/百万） |
+| **冠军模型** | 今日 Token 消耗最高的模型，以「模型名 + Token 数（万）」展示 |
+| **模型排行表** | 排名列表：模型名、调用次数、净 Token、占比、峰值/均值（单次请求）、最近调用时间。自动路由别名（以 `-auto` 结尾）单独标注 |
 
-**Mode toggle**: Click ◴ to cycle between Auto / Night (☾) / Day (☀).
+**模式切换**：点击顶栏 ◴ 按钮在 自动 / 夜间(☾) / 日间(☀) 三种模式间切换。
 
 ---
 
-## Data Source: `data.db`
+## 数据来源：`data.db`
 
-The dashboard reads from the Marvis local SQLite database located at:
+面板读取 Marvis 本地 SQLite 数据库，路径为：
 
 ```
 %APPDATA%\Tencent\Marvis\User\<USER_ID>\database\data.db
 ```
 
-### Key Table: `llm_token_usage`
+### 核心表：`llm_token_usage`
 
-The primary data source. Each row is a streaming chunk of a single LLM response.
+主要数据来源。每行为一次 LLM 响应的一个流式分块（chunk）。
 
-| Column | Description |
-|--------|-------------|
-| `usage_date` | Date partition (YYYY-MM-DD) |
-| `conversation_id` | Session ID |
-| `response_id` | Response ID (multiple rows per response for streaming) |
-| `model_id` | Model identifier (e.g., `deepseek-v4-pro-external`, `main-auto`) |
-| `input_tokens` | Input tokens (cumulative in this chunk) |
-| `output_tokens` | Output tokens (cumulative) |
-| `thinking_tokens` | Thinking/reasoning tokens |
-| `cached_tokens` | Cache-hit input tokens |
+| 字段 | 说明 |
+|------|------|
+| `usage_date` | 日期分区（YYYY-MM-DD） |
+| `conversation_id` | 会话 ID |
+| `response_id` | 响应 ID（同一响应对应多行，因流式输出产生多个 chunk） |
+| `model_id` | 模型标识（如 `deepseek-v4-pro-external`、`main-auto`） |
+| `input_tokens` | 输入 Token 数（本 chunk 累计值） |
+| `output_tokens` | 输出 Token 数（累计值） |
+| `thinking_tokens` | 思考/推理 Token 数 |
+| `cached_tokens` | 缓存命中的输入 Token 数 |
 
-**Deduplication**: Streaming produces 6+ chunks per response. The dashboard deduplicates by taking only the first chunk (MIN rowid) per `response_id`, then sums `(input_tokens - cached_tokens) + output_tokens` as net consumption.
+**去重逻辑**：流式输出每次响应产生 6+ 个 chunk，面板通过取每个 `response_id` 的首个 chunk（MIN rowid）去重，再按 `(input_tokens - cached_tokens) + output_tokens` 汇总为净消耗。
 
-### `conversations` Table
+### `conversations` 表
 
-Session state tracking. The dashboard uses `status='in_progress'` and `updated_at` within 2 minutes to determine busy/idle.
-
----
-
-## Other Tables Worth Monitoring
-
-These tables exist in `data.db` and are candidates for future dashboards:
-
-| Table | Rows (sample) | Potential Use |
-|-------|--------------|---------------|
-| **`agui_events`** | 1.8M+ | Streaming event stream per conversation — could visualize real-time agent thought/action flows, event type distribution, latency analysis |
-| **`messages`** | 8,593 | Full chat history (role, content, tool_calls) — conversation replay, prompt analysis, tool usage patterns |
-| **`approvals`** | 269 | User approval records (tool_name, status, reason) — audit trail of dangerous operations, approval rate analytics |
-| **`products`** | 30 | Generated file artifacts (path, name, conversation) — file output tracker, artifact gallery |
-| **`agent_checkpoints`** | 316 | Agent state persistence (BLOB) — checkpoint restore, state diff analysis |
-| **`user_personas`** | 0 | User-defined AI persona profiles |
+会话状态追踪。面板用 `status='in_progress'` 且 `updated_at` 在 2 分钟内的记录判定忙碌/空闲。
 
 ---
 
-## Technical Details
+## data.db 中其他值得监控的表
 
-- **Server**: Python stdlib `http.server` + `sqlite3`, zero external dependencies
-- **Port**: `19999`, binds `0.0.0.0` (accessible from LAN)
-- **Refresh**: 5-second auto-poll via `GET /api/stats`
-- **Pricing**: Hardcoded DeepSeek rates; adjust `PRICE_INPUT`/`PRICE_CACHED`/`PRICE_OUTPUT` in `get_stats()` for other providers
+以下表存在于 `data.db` 中，具备监控挖掘潜力：
+
+| 表名 | 行数（参考） | 潜在监控用途 |
+|------|-------------|-------------|
+| **`agui_events`** | 181 万+ | 流式事件流 —— 可做实时 Agent 思考/动作流可视化、事件类型分布、延迟分析 |
+| **`messages`** | 8,593 | 完整聊天记录（角色、内容、工具调用）—— 会话回放、提示词分析、工具使用模式统计 |
+| **`approvals`** | 269 | 用户审批记录（工具名、状态、原因）—— 高风险操作审计、审批通过率分析 |
+| **`products`** | 30 | 生成的产物文件（路径、名称、所属会话）—— 文件产出追踪、产物画廊 |
+| **`agent_checkpoints`** | 316 | Agent 状态快照（BLOB）—— 检查点恢复、状态差异分析 |
+| **`user_personas`** | 0 | 用户自定义 AI 人设档案 |
+
+---
+
+## 技术细节
+
+- **服务器**：Python 标准库 `http.server` + `sqlite3`，零外部依赖
+- **端口**：`19999`，绑定 `0.0.0.0`（局域网可访问）
+- **刷新**：前端每 5 秒自动请求 `GET /api/stats`
+- **计费**：按 DeepSeek 标准单价硬编码；如需适配其他模型，修改 `get_stats()` 中的 `PRICE_INPUT`/`PRICE_CACHED`/`PRICE_OUTPUT`
